@@ -86,6 +86,7 @@ enum NotificationShim {
                 this.icon = absoluteUrl(options.icon);
                 this.data = options.data ?? null;
                 this.silent = Boolean(options.silent);
+                this.group = findGroup(this.data);
                 this.onclick = null;
                 this.onshow = null;
                 this.onclose = null;
@@ -103,6 +104,7 @@ enum NotificationShim {
                     icon: this.icon,
                     silent: this.silent,
                     source: this.source,
+                    thread: this.group ? `${this.group.kind}/${this.group.id}` : '',
                     data: describe(this.data),
                 });
 
@@ -144,7 +146,7 @@ enum NotificationShim {
             const hasHandler = typeof notification.onclick === 'function' || notification.clickListeners > 0;
             window.focus();
             notification._emit('click');
-            const group = findGroup(notification.data);
+            const group = notification.group;
             return {
                 found: true,
                 source: notification.source,

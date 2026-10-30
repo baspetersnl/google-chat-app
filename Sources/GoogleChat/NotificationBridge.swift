@@ -54,12 +54,13 @@ final class NotificationBridge: NSObject, WKScriptMessageHandler {
         }
 
         let tag = payload["tag"] as? String ?? ""
+        let thread = payload["thread"] as? String ?? ""
 
         switch type {
         case "show":
-            NSLog("Notification \(id): source=\(payload["source"] ?? "") tag=\(tag) data=\(payload["data"] ?? "")")
+            NSLog("Notification \(id): source=\(payload["source"] ?? "") tag=\(tag) thread=\(thread) data=\(payload["data"] ?? "")")
             remember(frame: message.frameInfo, for: id)
-            show(id: id, tag: tag, payload: payload)
+            show(id: id, tag: tag, thread: thread, payload: payload)
         case "close":
             center.removeDeliveredNotifications(withIdentifiers: [identifier(id: id, tag: tag)])
         default:
@@ -81,13 +82,17 @@ final class NotificationBridge: NSObject, WKScriptMessageHandler {
         }
     }
 
-    private func show(id: String, tag: String, payload: [String: Any]) {
+    /// Notification Center groups by thread. Chat's tag is unique per message, so the conversation
+    /// (`dm/<id>` or `space/<id>`) is used when the shim could find it.
+    private func show(id: String, tag: String, thread: String, payload: [String: Any]) {
         let content = UNMutableNotificationContent()
         content.title = payload["title"] as? String ?? "Google Chat"
         content.body = payload["body"] as? String ?? ""
         content.userInfo = ["jsId": id]
 
-        if !tag.isEmpty {
+        if !thread.isEmpty {
+            content.threadIdentifier = thread
+        } else if !tag.isEmpty {
             content.threadIdentifier = tag
         }
 

@@ -6,7 +6,9 @@ Status: implemented in 1.0.0, verified working on 2026-10-30.
 
 - Every notification Google Chat creates is shown in the macOS Notification Center, with the sender's
   avatar as attachment and the default sound (unless the page asks for a silent notification).
-- Notifications with the same `tag` replace each other and are grouped per conversation.
+- Notifications with the same `tag` replace each other.
+- Notifications are grouped per conversation (one stack per direct message or space) when the user's
+  "Group notifications" setting for the app is "Automatic".
 - Notifications are also shown while the app is in the foreground (Chat itself decides whether to notify).
 - Clicking a notification brings the app to the front, shows the window if it was hidden, and opens the
   conversation the notification belongs to.
@@ -27,10 +29,12 @@ Status: implemented in 1.0.0, verified working on 2026-10-30.
 - `ServiceWorkerRegistration.prototype.showNotification` / `getNotifications`.
 
 Each notification is posted to the `gchatNotification` handler with `id`, `title`, `body`, `tag`,
-`icon` (absolute URL), `silent`, `source` (`page` or `serviceWorker`) and `data` (JSON, max 2000 chars,
-for logging). `NotificationBridge` shows it with `UNUserNotificationCenter`:
+`icon` (absolute URL), `silent`, `source` (`page` or `serviceWorker`), `thread` (`<kind>/<id>` of the
+conversation, empty when not found) and `data` (JSON, max 2000 chars, for logging). `NotificationBridge` shows it with `UNUserNotificationCenter`:
 
-- request identifier `tag:<tag>` when a tag exists, otherwise the shim's id; `threadIdentifier` is the tag;
+- request identifier `tag:<tag>` when a tag exists, otherwise the shim's id;
+- `threadIdentifier` is `thread`, falling back to the tag. The tag alone does not group anything, because
+  Chat makes it unique per message (see below);
 - the avatar is downloaded (3 s timeout) and converted to PNG, because Notification Center does not
   accept WebP;
 - the frame that created the notification is remembered (last 200) for the click.
@@ -54,7 +58,9 @@ for logging). `NotificationBridge` shows it with `UNUserNotificationCenter`:
   ```
   The conversation is identified by a GroupId: `[null, null, ["<dmId>"]]` for a direct message,
   `[["<spaceId>"]]` for a space (space shape inferred from the protobuf layout, not yet observed).
-- The `tag` has the form `<messageId>/<userId>`.
+- The `tag` has the form `<messageId>/<userId>`, so it is unique per message and useless for grouping.
+- Grouping per conversation relies on the same GroupId. For spaces the shape is still unverified; if it
+  differs, space notifications log `thread=` (empty) and are not grouped.
 - Which of the two click paths (sidebar or URL) actually opened the conversation was not logged. If
   clicks stop working, check the `Opening conversation ... through the sidebar` log line first.
 
