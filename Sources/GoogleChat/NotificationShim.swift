@@ -1,4 +1,4 @@
-// Google Chat voor macOS
+// Google Chat for macOS
 // Copyright (C) 2026 Bas Peters
 //
 // This program is free software: you can redistribute it and/or modify it under the terms of the
@@ -14,8 +14,8 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-/// JavaScript dat in elke frame wordt geladen. WKWebView kent de Web Notification API niet,
-/// dus deze shim vervangt `window.Notification` en stuurt elke notificatie naar de native app.
+/// JavaScript loaded into every frame. WKWebView does not support the Web Notification API,
+/// so this shim replaces `window.Notification` and forwards every notification to the native app.
 enum NotificationShim {
     static let source = #"""
     (() => {
@@ -37,10 +37,10 @@ enum NotificationShim {
             try { return JSON.stringify(value)?.slice(0, 2000) ?? ''; } catch (e) { return ''; }
         };
 
-        // notification.data van Chat bevat geen link maar een interne structuur met een GroupId:
-        // [["AAAA..."]] voor een ruimte, [null, null, ["q1nl..."]] voor een privégesprek.
+        // Chat's notification.data contains no link but an internal structure with a GroupId:
+        // [["AAAA..."]] for a space, [null, null, ["q1nl..."]] for a direct message.
         const findGroup = (value, depth = 0) => {
-            // Chat geeft de data als JSON-tekst mee.
+            // Chat passes the data as a JSON string.
             if (typeof value === 'string' && value.startsWith('[')) {
                 try { value = JSON.parse(value); } catch (e) { return null; }
             }
@@ -63,7 +63,7 @@ enum NotificationShim {
             return `${location.origin}${prefix}/app/chat/${encodeURIComponent(group.id)}`;
         };
 
-        // Opent een gesprek via de zijbalk van Chat, zodat de pagina niet herladen hoeft.
+        // Opens a conversation through Chat's sidebar, so the page does not have to reload.
         window.__gchatOpenGroup = (kind, id) => {
             const element = document.querySelector(`[data-group-id="${kind}/${CSS.escape(id)}"]`);
             if (!element) return 'missing';
@@ -136,8 +136,8 @@ enum NotificationShim {
             }
         }
 
-        // Geeft terug wat er gebeurde, zodat de app zelf naar het gesprek kan gaan als de
-        // pagina niets met de klik doet (bij service-worker-notificaties luistert er niemand).
+        // Returns what happened, so the app can open the conversation itself when the page does
+        // nothing with the click (nobody listens to service worker notifications).
         window.__gchatNotificationClicked = (id) => {
             const notification = instances.get(id);
             if (!notification) return { found: false };

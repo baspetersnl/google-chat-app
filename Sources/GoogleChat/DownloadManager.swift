@@ -1,4 +1,4 @@
-// Google Chat voor macOS
+// Google Chat for macOS
 // Copyright (C) 2026 Bas Peters
 //
 // This program is free software: you can redistribute it and/or modify it under the terms of the
@@ -17,7 +17,7 @@
 import AppKit
 import WebKit
 
-/// Slaat bijlagen op in ~/Downloads met een unieke bestandsnaam.
+/// Saves attachments to ~/Downloads with a unique file name.
 @MainActor
 final class DownloadManager: NSObject, WKDownloadDelegate {
     private var destinations: [ObjectIdentifier: URL] = [:]
@@ -39,7 +39,7 @@ final class DownloadManager: NSObject, WKDownloadDelegate {
             return
         }
 
-        // Laat de Downloads-stapel in het Dock even opspringen, net als Safari.
+        // Bounce the Downloads stack in the Dock, like Safari does.
         DistributedNotificationCenter.default().post(
             name: Notification.Name("com.apple.DownloadFileFinished"),
             object: destination.path
@@ -48,7 +48,7 @@ final class DownloadManager: NSObject, WKDownloadDelegate {
 
     func download(_ download: WKDownload, didFailWithError error: Error, resumeData: Data?) {
         destinations.removeValue(forKey: ObjectIdentifier(download))
-        NSLog("Download mislukt: \(error.localizedDescription)")
+        NSLog("Download failed: \(error.localizedDescription)")
     }
 
     private static func uniqueURL(in folder: URL, for filename: String) -> URL {

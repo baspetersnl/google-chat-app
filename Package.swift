@@ -1,5 +1,5 @@
 // swift-tools-version: 5.10
-// Google Chat voor macOS
+// Google Chat for macOS
 // Copyright (C) 2026 Bas Peters
 //
 // This program is free software: you can redistribute it and/or modify it under the terms of the

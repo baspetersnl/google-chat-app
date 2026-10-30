@@ -1,4 +1,4 @@
-// Google Chat voor macOS
+// Google Chat for macOS
 // Copyright (C) 2026 Bas Peters
 //
 // This program is free software: you can redistribute it and/or modify it under the terms of the
@@ -18,8 +18,8 @@ import AppKit
 import UserNotifications
 import WebKit
 
-/// Ontvangt notificaties uit de shim, toont ze via het macOS Notification Center
-/// en stuurt een klik terug naar de frame die de notificatie maakte.
+/// Receives notifications from the shim, shows them in the macOS Notification Center
+/// and sends a click back to the frame that created the notification.
 @MainActor
 final class NotificationBridge: NSObject, WKScriptMessageHandler {
     static let messageName = "gchatNotification"
@@ -39,7 +39,7 @@ final class NotificationBridge: NSObject, WKScriptMessageHandler {
     func requestAuthorization() {
         center.requestAuthorization(options: [.alert, .sound, .badge]) { _, error in
             if let error {
-                NSLog("Toestemming voor notificaties mislukt: \(error.localizedDescription)")
+                NSLog("Notification authorization failed: \(error.localizedDescription)")
             }
         }
     }
@@ -57,7 +57,7 @@ final class NotificationBridge: NSObject, WKScriptMessageHandler {
 
         switch type {
         case "show":
-            NSLog("Notificatie \(id): bron=\(payload["source"] ?? "") tag=\(tag) data=\(payload["data"] ?? "")")
+            NSLog("Notification \(id): source=\(payload["source"] ?? "") tag=\(tag) data=\(payload["data"] ?? "")")
             remember(frame: message.frameInfo, for: id)
             show(id: id, tag: tag, payload: payload)
         case "close":
@@ -67,7 +67,7 @@ final class NotificationBridge: NSObject, WKScriptMessageHandler {
         }
     }
 
-    /// Een tag vervangt een eerdere notificatie met dezelfde tag, net als in de browser.
+    /// A tag replaces an earlier notification with the same tag, as in the browser.
     private func identifier(id: String, tag: String) -> String {
         tag.isEmpty ? id : "tag:\(tag)"
     }
@@ -108,12 +108,12 @@ final class NotificationBridge: NSObject, WKScriptMessageHandler {
             do {
                 try await center.add(request)
             } catch {
-                NSLog("Notificatie tonen mislukt: \(error.localizedDescription)")
+                NSLog("Showing notification failed: \(error.localizedDescription)")
             }
         }
     }
 
-    /// Haalt de avatar op en zet hem om naar PNG; Notification Center accepteert geen WebP.
+    /// Downloads the avatar and converts it to PNG, because Notification Center does not accept WebP.
     private static func attachment(for url: URL) async -> UNNotificationAttachment? {
         guard LinkPolicy.isWeb(url) else {
             return nil
@@ -165,7 +165,7 @@ final class NotificationBridge: NSObject, WKScriptMessageHandler {
             case .success(let value):
                 self?.handleClickResult(value, jsId: jsId)
             case .failure(let error):
-                NSLog("Notificatieklik \(jsId) mislukt in frame: \(error.localizedDescription)")
+                NSLog("Notification click \(jsId) failed in frame: \(error.localizedDescription)")
                 if frame != nil {
                     webView.evaluateJavaScript(script, in: nil, in: .page) { [weak self] result in
                         if case .success(let value) = result {
@@ -177,11 +177,11 @@ final class NotificationBridge: NSObject, WKScriptMessageHandler {
         }
     }
 
-    /// Doet de pagina zelf niets met de klik (bij service-worker-notificaties luistert er niemand),
-    /// dan opent de app het gesprek: eerst via de zijbalk, anders door het adres te laden.
+    /// When the page does nothing with the click (nobody listens to service worker notifications),
+    /// the app opens the conversation itself: through the sidebar first, otherwise by loading its URL.
     private func handleClickResult(_ value: Any, jsId: String) {
         let result = value as? [String: Any] ?? [:]
-        NSLog("Notificatieklik \(jsId): \(result)")
+        NSLog("Notification click \(jsId): \(result)")
 
         let hasHandler = result["hasHandler"] as? Bool ?? false
         let fromServiceWorker = result["source"] as? String == "serviceWorker"
@@ -202,7 +202,7 @@ final class NotificationBridge: NSObject, WKScriptMessageHandler {
 
         webView.evaluateJavaScript(script, in: nil, in: .page) { [weak webView] outcome in
             let opened = (try? outcome.get()) as? String == "clicked"
-            NSLog("Gesprek \(kind)/\(group) openen via zijbalk: \(opened ? "gelukt" : "niet gevonden")")
+            NSLog("Opening conversation \(kind)/\(group) through the sidebar: \(opened ? "succeeded" : "not found")")
 
             if !opened, let target, LinkPolicy.isInternal(target) {
                 webView?.load(URLRequest(url: target))

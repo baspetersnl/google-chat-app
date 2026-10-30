@@ -1,0 +1,31 @@
+/* Menu items */
+"About Google Chat" = "Over Google Chat";
+"Hide Google Chat" = "Verberg Google Chat";
+"Hide Others" = "Verberg andere";
+"Show All" = "Toon alles";
+"Quit Google Chat" = "Stop Google Chat";
+"Edit" = "Wijzig";
+"Undo" = "Herstel";
+"Redo" = "Opnieuw";
+"Cut" = "Knip";
+"Copy" = "Kopieer";
+"Paste" = "Plak";
+"Paste and Match Style" = "Plak met zelfde stijl";
+"Select All" = "Selecteer alles";
+"View" = "Weergave";
+"Reload Page" = "Laad pagina opnieuw";
+"Go to Start" = "Ga naar start";
+"Back" = "Terug";
+"Forward" = "Vooruit";
+"Actual Size" = "Werkelijke grootte";
+"Zoom In" = "Zoom in";
+"Zoom Out" = "Zoom uit";
+"Enter Full Screen" = "Activeer schermvullende weergave";
+"Window" = "Venster";
+"Minimize" = "Minimaliseer";
+"Zoom" = "Zoom";
+"Close Window" = "Sluit venster";
+
+/* Buttons */
+"OK" = "OK";
+"Cancel" = "Annuleer";

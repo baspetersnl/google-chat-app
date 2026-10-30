@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Google Chat voor macOS
+# Google Chat for macOS
 # Copyright (C) 2026 Bas Peters
 #
 # This program is free software: you can redistribute it and/or modify it under the terms of the
@@ -15,7 +15,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-# Bouwt "build/Google Chat.app". Met "install" wordt de app daarna naar /Applications gekopieerd.
+# Builds "build/Google Chat.app". With "install", the app is then copied to /Applications.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -47,14 +47,15 @@ mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BINARY" "$APP/Contents/MacOS/GoogleChat"
 cp "$ROOT/Support/Info.plist" "$APP/Contents/Info.plist"
 cp "$ICON" "$APP/Contents/Resources/AppIcon.icns"
+cp -R "$ROOT"/Support/*.lproj "$APP/Contents/Resources/"
 
-# Ad-hoc ondertekenen: nodig voor notificaties en camera/microfoon-toestemming.
+# Ad-hoc signing: required for notifications and camera/microphone permissions.
 codesign --force --sign - "$APP"
 
-echo "Gebouwd: $APP"
+echo "Built: $APP"
 
 if [[ "${1:-}" == "install" ]]; then
     rm -rf "/Applications/Google Chat.app"
     cp -R "$APP" "/Applications/Google Chat.app"
-    echo "Geïnstalleerd: /Applications/Google Chat.app"
+    echo "Installed: /Applications/Google Chat.app"
 fi

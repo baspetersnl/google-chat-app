@@ -1,4 +1,4 @@
-// Google Chat voor macOS
+// Google Chat for macOS
 // Copyright (C) 2026 Bas Peters
 //
 // This program is free software: you can redistribute it and/or modify it under the terms of the
@@ -17,8 +17,8 @@
 import AppKit
 import WebKit
 
-/// Onzichtbare webview voor `window.open()` zonder URL. Zodra de pagina een echt adres laadt,
-/// gaat dat adres naar `open` en ruimt de catcher zichzelf op.
+/// Invisible web view for `window.open()` without a URL. As soon as the page loads a real address,
+/// that address is passed to `open` and the catcher cleans itself up.
 @MainActor
 final class PopupCatcher: NSObject, WKNavigationDelegate, WKUIDelegate {
     let webView: WKWebView

@@ -1,4 +1,4 @@
-// Google Chat voor macOS
+// Google Chat for macOS
 // Copyright (C) 2026 Bas Peters
 //
 // This program is free software: you can redistribute it and/or modify it under the terms of the
@@ -16,11 +16,11 @@
 
 import Foundation
 
-/// Bepaalt welke URL's in de app blijven en welke naar de standaardbrowser gaan.
+/// Decides which URLs stay in the app and which open in the default browser.
 enum LinkPolicy {
     static let startURL = URL(string: "https://chat.google.com/")!
 
-    /// Safari-user-agent, zodat Google het inloggen niet blokkeert als "embedded browser".
+    /// Safari user agent, so Google does not block sign-in as an "embedded browser".
     static let userAgent =
         "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Safari/605.1.15"
 
@@ -37,7 +37,7 @@ enum LinkPolicy {
             return url.path.hasPrefix("/chat")
         }
 
-        // Landingspagina voor uitgelogde gebruikers en de inlogflow (inclusief landendomeinen als google.nl).
+        // Landing page for signed-out users and the sign-in flow (including country domains such as google.nl).
         if host == "workspace.google.com" || host == "accounts.youtube.com" {
             return true
         }
@@ -47,7 +47,7 @@ enum LinkPolicy {
             || (isGoogleDomain(host) && url.path.hasPrefix("/accounts/SetSID"))
     }
 
-    /// google.com, google.nl, google.co.uk en hun subdomeinen.
+    /// google.com, google.nl, google.co.uk and their subdomains.
     private static func isGoogleDomain(_ host: String) -> Bool {
         host.split(separator: ".").contains("google")
     }

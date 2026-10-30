@@ -1,0 +1,8 @@
+/* Camera permission prompt */
+"NSCameraUsageDescription" = "Google Chat gebruikt de camera voor videogesprekken.";
+
+/* Microphone permission prompt */
+"NSMicrophoneUsageDescription" = "Google Chat gebruikt de microfoon voor gesprekken en spraakberichten.";
+
+/* About window */
+"NSHumanReadableCopyright" = "Copyright © 2026 Bas Peters. Uitgebracht onder de GNU General Public License v3.0.";

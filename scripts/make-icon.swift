@@ -1,4 +1,4 @@
-// Google Chat voor macOS
+// Google Chat for macOS
 // Copyright (C) 2026 Bas Peters
 //
 // This program is free software: you can redistribute it and/or modify it under the terms of the
@@ -14,8 +14,8 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-// Tekent het app-icoon (1024x1024 PNG): groene afgeronde tegel met een wit tekstballonnetje.
-// Gebruik: swift scripts/make-icon.swift <uitvoer.png>
+// Draws the app icon (1024x1024 PNG): a green rounded tile with a white speech bubble.
+// Usage: swift scripts/make-icon.swift <output.png>
 import AppKit
 
 let output = CommandLine.arguments.count > 1 ? CommandLine.arguments[1] : "AppIcon.png"
@@ -37,7 +37,7 @@ let rep = NSBitmapImageRep(
 NSGraphicsContext.saveGraphicsState()
 NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
 
-// Tegel volgens het macOS-raster: 824px met marge van 100px.
+// Tile following the macOS icon grid: 824px with a 100px margin.
 let tile = NSRect(x: 100, y: 100, width: 824, height: 824)
 let tilePath = NSBezierPath(roundedRect: tile, xRadius: 185, yRadius: 185)
 
@@ -56,7 +56,7 @@ NSGradient(
     ending: NSColor(srgbRed: 0.0, green: 0.55, blue: 0.27, alpha: 1)
 )!.draw(in: tilePath, angle: -90)
 
-// Tekstballon met staartje linksonder.
+// Speech bubble with a tail at the bottom left.
 let bubble = NSBezierPath(roundedRect: NSRect(x: 262, y: 360, width: 500, height: 360), xRadius: 90, yRadius: 90)
 let tail = NSBezierPath()
 tail.move(to: NSPoint(x: 300, y: 400))
@@ -68,7 +68,7 @@ NSColor.white.setFill()
 bubble.fill()
 tail.fill()
 
-// Drie puntjes in de ballon.
+// Three dots in the bubble.
 NSColor(srgbRed: 0.0, green: 0.55, blue: 0.27, alpha: 1).setFill()
 for x in [382.0, 512.0, 642.0] {
     NSBezierPath(ovalIn: NSRect(x: x - 38, y: 502, width: 76, height: 76)).fill()

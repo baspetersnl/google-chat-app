@@ -1,4 +1,4 @@
-// Google Chat voor macOS
+// Google Chat for macOS
 // Copyright (C) 2026 Bas Peters
 //
 // This program is free software: you can redistribute it and/or modify it under the terms of the
@@ -14,9 +14,8 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-/// JavaScript dat in elke frame de ongelezen-status van Chat volgt: paginatitel, favicons en
-/// elementen waarvan het aria-label "ongelezen" of "unread" bevat. Bij een wijziging gaat de
-/// status naar `UnreadTracker`.
+/// JavaScript that tracks Chat's unread state in every frame: page title, favicons and elements
+/// whose aria-label contains "unread" (or the Dutch "ongelezen"). Changes are sent to `UnreadTracker`.
 enum UnreadShim {
     static let source = #"""
     (() => {

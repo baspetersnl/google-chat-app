@@ -3,7 +3,12 @@
 <plist version="1.0">
 <dict>
     <key>CFBundleDevelopmentRegion</key>
-    <string>nl</string>
+    <string>en</string>
+    <key>CFBundleLocalizations</key>
+    <array>
+        <string>en</string>
+        <string>nl</string>
+    </array>
     <key>CFBundleExecutable</key>
     <string>GoogleChat</string>
     <key>CFBundleIconFile</key>
@@ -29,12 +34,12 @@
     <key>NSHighResolutionCapable</key>
     <true/>
     <key>NSHumanReadableCopyright</key>
-    <string>Copyright © 2026 Bas Peters. Uitgebracht onder de GNU General Public License v3.0.</string>
+    <string>Copyright © 2026 Bas Peters. Released under the GNU General Public License v3.0.</string>
     <key>NSPrincipalClass</key>
     <string>NSApplication</string>
     <key>NSCameraUsageDescription</key>
-    <string>Google Chat gebruikt de camera voor videogesprekken.</string>
+    <string>Google Chat uses the camera for video calls.</string>
     <key>NSMicrophoneUsageDescription</key>
-    <string>Google Chat gebruikt de microfoon voor gesprekken en spraakberichten.</string>
+    <string>Google Chat uses the microphone for calls and voice messages.</string>
 </dict>
 </plist>

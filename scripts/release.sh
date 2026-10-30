@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Google Chat voor macOS
+# Google Chat for macOS
 # Copyright (C) 2026 Bas Peters
 #
 # This program is free software: you can redistribute it and/or modify it under the terms of the
@@ -15,8 +15,8 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-# Maakt een release van de versie in Support/Info.plist: bouwt de app, pakt hem in als zip,
-# zet de tag v<versie> en pusht die. Met de GitHub CLI (gh) wordt de release ook gepubliceerd.
+# Creates a release of the version in Support/Info.plist: builds the app, zips it, creates the
+# tag v<version> and pushes it. With the GitHub CLI (gh), the release is published as well.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -28,12 +28,12 @@ ZIP="$ROOT/build/Google-Chat-$VERSION.zip"
 NOTES="$ROOT/build/release-notes-$VERSION.md"
 
 if [[ -n "$(git status --porcelain)" ]]; then
-    echo "Er staan nog niet-gecommitte wijzigingen. Commit die eerst." >&2
+    echo "There are uncommitted changes. Commit them first." >&2
     exit 1
 fi
 
 if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null || git ls-remote --exit-code --tags origin "$TAG" >/dev/null 2>&1; then
-    echo "Tag $TAG bestaat al. Verhoog CFBundleShortVersionString in Support/Info.plist." >&2
+    echo "Tag $TAG already exists. Increase CFBundleShortVersionString in Support/Info.plist." >&2
     exit 1
 fi
 
@@ -41,7 +41,7 @@ fi
 
 rm -f "$ZIP"
 ditto -c -k --keepParent "$ROOT/build/Google Chat.app" "$ZIP"
-echo "Ingepakt: $ZIP"
+echo "Packaged: $ZIP"
 
 cat > "$NOTES" <<EOF
 ## Installation
@@ -58,16 +58,16 @@ cat > "$NOTES" <<EOF
 Requires macOS 14 or later.
 EOF
 
-git tag -a "$TAG" -m "Versie $VERSION"
+git tag -a "$TAG" -m "Version $VERSION"
 git push origin "$TAG"
-echo "Tag gepusht: $TAG"
+echo "Pushed tag: $TAG"
 
 if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
     gh release create "$TAG" "$ZIP" --title "Google Chat $VERSION" --notes-file "$NOTES"
 else
     echo
-    echo "GitHub CLI niet beschikbaar. Publiceer de release zelf:"
+    echo "GitHub CLI not available. Publish the release yourself:"
     echo "  https://github.com/baspetersnl/google-chat-app/releases/new?tag=$TAG"
-    echo "  Bijlage:        $ZIP"
-    echo "  Beschrijving:   $NOTES"
+    echo "  Attachment:     $ZIP"
+    echo "  Description:    $NOTES"
 fi

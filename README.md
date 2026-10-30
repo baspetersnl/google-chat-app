@@ -1,71 +1,90 @@
-# Google Chat voor macOS
+# Google Chat for macOS
 
-Native macOS-app (Swift, AppKit en WKWebView) rond Google Chat, als vervanging van de Chrome-extensie.
+A native macOS app (Swift, AppKit and WKWebView) for Google Chat, as a replacement for the Chrome extension.
 
-## Bouwen
+The app follows the language of your Mac: English by default, Dutch when macOS is set to Dutch.
 
-Je hebt alleen de Command Line Tools nodig, geen Xcode.
+## Installation
+
+Download the latest zip from [Releases](https://github.com/baspetersnl/google-chat-app/releases), unzip it
+and drag **Google Chat.app** to your Applications folder. The app is not notarized by Apple. If macOS says
+the app cannot be opened, go to System Settings > Privacy & Security and click **Open Anyway**, or run:
 
 ```sh
-./scripts/build.sh           # bouwt build/Google Chat.app
-./scripts/build.sh install   # bouwt en kopieert naar /Applications
+xattr -dr com.apple.quarantine "/Applications/Google Chat.app"
 ```
 
-## Release maken
+Requires macOS 14 or later.
 
-1. Verhoog `CFBundleShortVersionString` (en `CFBundleVersion`) in `Support/Info.plist` en commit dat.
-2. Draai `./scripts/release.sh`. Het script bouwt de app, maakt `build/Google-Chat-<versie>.zip`,
-   zet de tag `v<versie>` en pusht die. Met de [GitHub CLI](https://cli.github.com) (`gh`) wordt de
-   release ook gepubliceerd; anders toont het script de link om dat zelf te doen.
+## Building
 
-## Wat de app doet
+You only need the Command Line Tools, not Xcode.
 
-- **Notificaties**: WKWebView kent de Web Notification API niet. `NotificationShim` vervangt
-  `window.Notification` (en `showNotification` van service workers) en stuurt elke notificatie naar
-  `NotificationBridge`, die hem via het macOS Notification Center toont, met de avatar van de afzender.
-  Klik je op een notificatie, dan gaat de app naar voren en opent Chat het juiste gesprek.
-- **Op de achtergrond actief**: Cmd+W verbergt het venster alleen. App Nap en de vertraging van
-  verborgen pagina's staan uit, zodat berichten binnen blijven komen. Stoppen gaat met Cmd+Q.
-- **Dock-badge** met het aantal ongelezen berichten, gelezen van de Home-snelkoppeling in Chat.
-  Is er geen aantal maar wel een favicon met stip, dan toont de badge een stip.
-- **Gesprek onderaan na versturen**: in WebKit verschuift een gesprek na het versturen naar het
-  een-na-laatste bericht. `ScrollShim` houdt het gesprek onderaan.
-- **Links** buiten Chat (Drive, Meet, websites) openen in je standaardbrowser.
-- **Bijlagen** uploaden via het bestandsvenster en downloaden naar `~/Downloads`.
-- Inloggen blijft bewaard, zoomniveau (Cmd+/Cmd-/Cmd0) en vensterpositie ook.
+```sh
+./scripts/build.sh           # builds build/Google Chat.app
+./scripts/build.sh install   # builds and copies it to /Applications
+```
 
-## Testen en debuggen
+## Creating a release
 
-De webview is inspecteerbaar: Safari > Ontwikkel > Google Chat. Een testnotificatie vanuit de console:
+1. Increase `CFBundleShortVersionString` (and `CFBundleVersion`) in `Support/Info.plist` and commit it.
+2. Run `./scripts/release.sh`. The script builds the app, creates `build/Google-Chat-<version>.zip`,
+   creates the tag `v<version>` and pushes it. With the [GitHub CLI](https://cli.github.com) (`gh`), the
+   release is published as well; otherwise the script shows the link to publish it yourself.
+
+## Features
+
+- **Notifications**: WKWebView does not support the Web Notification API. `NotificationShim` replaces
+  `window.Notification` (and `showNotification` of service workers) and forwards every notification to
+  `NotificationBridge`, which shows it in the macOS Notification Center with the sender's avatar.
+  Clicking a notification brings the app to the front and opens the right conversation.
+- **Runs in the background**: Cmd+W only hides the window. App Nap and the throttling of hidden pages
+  are disabled, so messages keep coming in. Quit with Cmd+Q.
+- **Dock badge** with the number of unread messages, read from the Home shortcut in Chat. When there is
+  no number but the favicon shows a dot, the badge shows a dot.
+- **Conversation stays at the bottom after sending**: in WebKit, a conversation shifts to the
+  second-to-last message after sending. `ScrollShim` keeps it at the bottom.
+- **Links** outside Chat (Drive, Meet, websites) open in your default browser.
+- **Attachments** can be uploaded through the file dialog and are downloaded to `~/Downloads`.
+- Your sign-in, zoom level (Cmd+ / Cmd- / Cmd0) and window position are remembered.
+- **Localized**: menus, buttons and permission prompts follow the system language (English and Dutch).
+  Translations live in `Support/<language>.lproj/`.
+
+## Testing and debugging
+
+The web view can be inspected: Safari > Develop > Google Chat. A test notification from the console:
 
 ```js
-new Notification('Test', { body: 'Hallo vanuit Google Chat' })
+new Notification('Test', { body: 'Hello from Google Chat' })
 ```
 
-Komt er niets binnen, kijk dan in Systeeminstellingen > Berichtgeving > Google Chat of meldingen
-aanstaan, en in Chat zelf (Instellingen > Meldingen) of meldingen voor de browser aanstaan.
+If nothing appears, check System Settings > Notifications > Google Chat, and in Chat itself
+(Settings > Notifications) whether browser notifications are enabled.
 
-## Structuur
+The unread count is read from Chat's labels in English and Dutch. In other languages the badge falls
+back to a dot.
 
-| Bestand | Rol |
+## Structure
+
+| File | Purpose |
 | --- | --- |
-| `AppDelegate.swift` | Opstarten, heropenen via Dock, App Nap uitzetten |
-| `ChatWindowController.swift` | Venster, webview, navigatie, uploads, dock-badge |
-| `NotificationShim.swift` | JavaScript dat de Notification API nabootst |
-| `NotificationBridge.swift` | Brug naar UNUserNotificationCenter; bij een klik het juiste gesprek openen |
-| `UnreadShim.swift`, `UnreadTracker.swift`, `UnreadCount.swift` | Ongelezen-status uitlezen voor de Dock-badge |
-| `ScrollShim.swift` | Gesprek onderaan houden na versturen |
-| `LinkPolicy.swift` | Welke URL's in de app blijven |
-| `PopupCatcher.swift` | `window.open()` zonder URL naar de browser sturen |
-| `DownloadManager.swift` | Downloads naar `~/Downloads` |
-| `MainMenu.swift` | Menubalk (nodig voor kopiëren en plakken) |
+| `AppDelegate.swift` | Startup, reopening from the Dock, disabling App Nap |
+| `ChatWindowController.swift` | Window, web view, navigation, uploads |
+| `NotificationShim.swift` | JavaScript that emulates the Notification API |
+| `NotificationBridge.swift` | Bridge to UNUserNotificationCenter; opens the right conversation on click |
+| `UnreadShim.swift`, `UnreadTracker.swift`, `UnreadCount.swift` | Reading the unread state for the Dock badge |
+| `ScrollShim.swift` | Keeping a conversation at the bottom after sending |
+| `LinkPolicy.swift` | Which URLs stay in the app |
+| `PopupCatcher.swift` | Sending `window.open()` without a URL to the browser |
+| `DownloadManager.swift` | Downloads to `~/Downloads` |
+| `MainMenu.swift` | Menu bar (required for copy and paste) |
 
-## Licentie
+## License
 
 Copyright (C) 2026 Bas Peters
 
-Dit project valt onder de [GNU General Public License v3.0](LICENSE). Je mag de code gebruiken,
-aanpassen en verspreiden, zolang afgeleide versies onder dezelfde licentie vallen en de broncode
-beschikbaar blijft.
+This project is licensed under the [GNU General Public License v3.0](LICENSE). You may use, modify and
+distribute the code, as long as derived versions are released under the same license and the source code
+remains available.
 
-Deze app is niet gemaakt door of verbonden aan Google. "Google Chat" is een handelsmerk van Google LLC.
+This app is not made by or affiliated with Google. "Google Chat" is a trademark of Google LLC.

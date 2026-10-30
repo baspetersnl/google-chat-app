@@ -1,4 +1,4 @@
-// Google Chat voor macOS
+// Google Chat for macOS
 // Copyright (C) 2026 Bas Peters
 //
 // This program is free software: you can redistribute it and/or modify it under the terms of the
@@ -33,11 +33,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         controller.showWindow(nil)
         NSApp.activate(ignoringOtherApps: true)
 
-        // Zonder dit legt App Nap de webview stil zodra het venster verborgen is,
-        // en komen er geen berichten (en dus geen notificaties) meer binnen.
+        // Without this, App Nap suspends the web view as soon as the window is hidden,
+        // and no more messages (and therefore no notifications) come in.
         activity = ProcessInfo.processInfo.beginActivity(
             options: [.userInitiatedAllowingIdleSystemSleep],
-            reason: "Google Chat blijft berichten ontvangen op de achtergrond"
+            reason: "Google Chat keeps receiving messages in the background"
         )
     }
 

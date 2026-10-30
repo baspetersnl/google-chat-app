@@ -1,4 +1,4 @@
-// Google Chat voor macOS
+// Google Chat for macOS
 // Copyright (C) 2026 Bas Peters
 //
 // This program is free software: you can redistribute it and/or modify it under the terms of the
@@ -16,7 +16,7 @@
 
 import Foundation
 
-/// Haalt het aantal ongelezen berichten uit titels, aria-labels en favicons van Chat.
+/// Extracts the number of unread messages from Chat's titles, aria-labels and favicons.
 enum UnreadCount {
     private static let titlePatterns = [
         #"\((\d+)\)"#,
@@ -26,7 +26,7 @@ enum UnreadCount {
     private static let labelNumberPattern = #"(\d+)\s+(?:unread|ongelezen)"#
     private static let homePattern = #"home\b.*?(\d+)\s+(?:unread|ongelezen)"#
 
-    /// Bijvoorbeeld "Chat (3)" of "3 ongelezen".
+    /// For example "Chat (3)" or "3 unread".
     static func parse(_ title: String) -> Int? {
         for pattern in titlePatterns {
             if let count = firstNumber(in: title, pattern: pattern), count > 0 {
@@ -37,9 +37,9 @@ enum UnreadCount {
         return nil
     }
 
-    /// Chat zet het totaal op de Home-snelkoppeling ("Snelkoppeling Home, 3 ongelezen berichten").
-    /// Zonder die snelkoppeling telt het hoogste getal uit een label als "2 ongelezen berichten".
-    /// Labels zonder getal ("Markeren als ongelezen") zijn knoppen en tellen niet mee.
+    /// Chat puts the total on the Home shortcut ("Home shortcut, 3 unread messages").
+    /// Without that shortcut, the highest number from a label such as "2 unread messages" is used.
+    /// Labels without a number ("Mark as unread") are buttons and are ignored.
     static func count(labels: [String]) -> Int {
         if let home = labels.lazy.compactMap({ firstNumber(in: $0, pattern: homePattern) }).first {
             return home
@@ -48,7 +48,7 @@ enum UnreadCount {
         return labels.compactMap { firstNumber(in: $0, pattern: labelNumberPattern) }.max() ?? 0
     }
 
-    /// Chat wisselt bij ongelezen berichten van "..._favicon_no_dot_..." naar een favicon met stip.
+    /// With unread messages, Chat switches from "..._favicon_no_dot_..." to a favicon with a dot.
     static func hasUnreadIcon(_ icons: [String]) -> Bool {
         icons.contains {
             $0.range(of: #"(?<!no_)dot|notif|unread|badge"#, options: [.regularExpression, .caseInsensitive]) != nil

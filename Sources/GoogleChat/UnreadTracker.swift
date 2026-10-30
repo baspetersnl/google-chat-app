@@ -1,4 +1,4 @@
-// Google Chat voor macOS
+// Google Chat for macOS
 // Copyright (C) 2026 Bas Peters
 //
 // This program is free software: you can redistribute it and/or modify it under the terms of the
@@ -17,8 +17,8 @@
 import AppKit
 import WebKit
 
-/// Verzamelt de ongelezen-status uit alle frames en zet de badge op het Dock-icoon.
-/// Een getal als dat te vinden is, anders een stip als Chat wel laat zien dat er iets ongelezen is.
+/// Collects the unread state from all frames and sets the badge on the Dock icon:
+/// a number when one can be found, otherwise a dot when Chat shows that something is unread.
 @MainActor
 final class UnreadTracker: NSObject, WKScriptMessageHandler {
     static let messageName = "gchatUnread"
@@ -45,19 +45,18 @@ final class UnreadTracker: NSObject, WKScriptMessageHandler {
         frames[frame] = state
 
         if !state.icons.isEmpty || !state.labels.isEmpty {
-            NSLog("Ongelezen-status \(url): titel=\(state.title) icons=\(state.icons) labels=\(state.labels)")
+            NSLog("Unread state \(url): title=\(state.title) icons=\(state.icons) labels=\(state.labels)")
         }
         updateBadge()
     }
 
-    /// Vergeet frames van eerdere pagina's na een volledige paginalading.
+    /// Forgets frames of earlier pages after a full page load.
     func reset() {
         frames.removeAll()
         updateBadge()
     }
 
     private func updateBadge() {
-
         let states = Array(frames.values)
         let titleCount = states.compactMap { UnreadCount.parse($0.title) }.max() ?? 0
         let labelCount = states.map { UnreadCount.count(labels: $0.labels) }.max() ?? 0

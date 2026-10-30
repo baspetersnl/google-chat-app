@@ -1,4 +1,4 @@
-// Google Chat voor macOS
+// Google Chat for macOS
 // Copyright (C) 2026 Bas Peters
 //
 // This program is free software: you can redistribute it and/or modify it under the terms of the
@@ -97,11 +97,11 @@ final class ChatWindowController: NSWindowController, NSWindowDelegate {
 
     @available(*, unavailable)
     required init?(coder: NSCoder) {
-        fatalError("init(coder:) is niet ondersteund")
+        fatalError("init(coder:) is not supported")
     }
 
-    /// WebKit vertraagt pagina's in een onzichtbaar venster sterk. Via de (private) voorkeur
-    /// blijft de chatverbinding actief als het venster verborgen is.
+    /// WebKit heavily throttles pages in an invisible window. This (private) preference keeps
+    /// the chat connection active while the window is hidden.
     private static func disableBackgroundSuppression(_ preferences: WKPreferences) {
         let setter = NSSelectorFromString("_setPageVisibilityBasedProcessSuppressionEnabled:")
 
@@ -115,15 +115,15 @@ final class ChatWindowController: NSWindowController, NSWindowDelegate {
         window?.title = title.isEmpty ? "Google Chat" : title
     }
 
-    // MARK: Venster
+    // MARK: Window
 
-    /// Sluiten verbergt het venster alleen, zodat berichten en notificaties blijven binnenkomen.
+    /// Closing only hides the window, so messages and notifications keep coming in.
     func windowShouldClose(_ sender: NSWindow) -> Bool {
         sender.orderOut(nil)
         return false
     }
 
-    // MARK: Menu-acties
+    // MARK: Menu actions
 
     @objc func reloadPage(_ sender: Any?) {
         webView.reload()
@@ -160,7 +160,7 @@ final class ChatWindowController: NSWindowController, NSWindowDelegate {
     }
 }
 
-// MARK: - Navigatie
+// MARK: - Navigation
 
 extension ChatWindowController: WKNavigationDelegate {
     func webView(
@@ -187,7 +187,7 @@ extension ChatWindowController: WKNavigationDelegate {
         let isMainFrame = navigationAction.targetFrame?.isMainFrame ?? false
 
         if isMainFrame, navigationAction.navigationType == .linkActivated, LinkPolicy.isWeb(url), !LinkPolicy.isInternal(url) {
-            NSLog("Extern geopend: \(url.absoluteString)")
+            NSLog("Opened externally: \(url.absoluteString)")
             NSWorkspace.shared.open(url)
             decisionHandler(.cancel)
             return
@@ -224,7 +224,7 @@ extension ChatWindowController: WKNavigationDelegate {
 // MARK: - UI
 
 extension ChatWindowController: WKUIDelegate {
-    /// `target="_blank"` en `window.open`: Chat en inloggen in de app, de rest naar de standaardbrowser.
+    /// `target="_blank"` and `window.open`: Chat and sign-in stay in the app, everything else opens in the default browser.
     func webView(
         _ webView: WKWebView,
         createWebViewWith configuration: WKWebViewConfiguration,
@@ -236,7 +236,7 @@ extension ChatWindowController: WKUIDelegate {
             return nil
         }
 
-        // window.open() zonder URL krijgt pas later een adres; vang dat op in een onzichtbare webview.
+        // window.open() without a URL only gets an address later; catch it in an invisible web view.
         let popup = PopupCatcher(
             configuration: configuration,
             open: { [weak self] url in self?.openPopupURL(url) },
@@ -250,7 +250,7 @@ extension ChatWindowController: WKUIDelegate {
         if LinkPolicy.isInternal(url) {
             webView.load(URLRequest(url: url))
         } else {
-            NSLog("Extern geopend: \(url.absoluteString)")
+            NSLog("Opened externally: \(url.absoluteString)")
             NSWorkspace.shared.open(url)
         }
     }
@@ -284,7 +284,7 @@ extension ChatWindowController: WKUIDelegate {
     ) {
         let alert = NSAlert()
         alert.messageText = message
-        alert.addButton(withTitle: "OK")
+        alert.addButton(withTitle: NSLocalizedString("OK", comment: "Button"))
         alert.runModal()
         completionHandler()
     }
@@ -297,8 +297,8 @@ extension ChatWindowController: WKUIDelegate {
     ) {
         let alert = NSAlert()
         alert.messageText = message
-        alert.addButton(withTitle: "OK")
-        alert.addButton(withTitle: "Annuleren")
+        alert.addButton(withTitle: NSLocalizedString("OK", comment: "Button"))
+        alert.addButton(withTitle: NSLocalizedString("Cancel", comment: "Button"))
         completionHandler(alert.runModal() == .alertFirstButtonReturn)
     }
 
@@ -313,7 +313,7 @@ extension ChatWindowController: WKUIDelegate {
     }
 }
 
-/// Voorkomt een retain-cycle tussen de WKUserContentController en de bridge.
+/// Prevents a retain cycle between the WKUserContentController and the bridge.
 private final class WeakMessageHandler: NSObject, WKScriptMessageHandler {
     private weak var target: WKScriptMessageHandler?
 

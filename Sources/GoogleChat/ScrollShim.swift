@@ -1,4 +1,4 @@
-// Google Chat voor macOS
+// Google Chat for macOS
 // Copyright (C) 2026 Bas Peters
 //
 // This program is free software: you can redistribute it and/or modify it under the terms of the
@@ -14,12 +14,12 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-/// JavaScript dat een gesprek onderaan houdt na het versturen van een bericht.
+/// JavaScript that keeps a conversation at the bottom after sending a message.
 ///
-/// Chat scrolt na versturen zelf naar beneden, maar in WebKit verschuift de lijst kort daarna
-/// (bij het focussen en verkleinen van het invoerveld) weer omhoog, naar het een-na-laatste bericht.
-/// Dit script houdt een lijst onderaan zolang niet de gebruiker of Chat zelf ergens anders heen
-/// scrolt. Vlak na het versturen telt alleen scrollen door de gebruiker.
+/// Chat scrolls to the bottom after sending, but in WebKit the list shifts up again shortly after
+/// (when the composer is focused and shrinks), ending at the second-to-last message. This script
+/// keeps a list at the bottom until the user or Chat itself scrolls elsewhere. Right after sending,
+/// only scrolling by the user counts.
 enum ScrollShim {
     static let source = #"""
     (() => {
@@ -38,7 +38,7 @@ enum ScrollShim {
         const distanceToBottom = (element) => element.scrollHeight - element.scrollTop - element.clientHeight;
         const isEditable = (element) => element instanceof Element && element.closest('input, textarea, [contenteditable=""], [contenteditable="true"]');
 
-        // Scrollen door de gebruiker: scrollwiel, trackpad, scrollbalk of navigatietoetsen buiten een invoerveld.
+        // Scrolling by the user: scroll wheel, trackpad, scroll bar or navigation keys outside a text field.
         addEventListener('wheel', markIntent, { capture: true, passive: true });
         addEventListener('touchmove', markIntent, { capture: true, passive: true });
         addEventListener('pointerdown', (event) => {
@@ -48,7 +48,7 @@ enum ScrollShim {
             if (!isEditable(event.target) && ['PageUp', 'PageDown', 'Home', 'End', 'ArrowUp', 'ArrowDown', ' '].includes(event.key)) markIntent();
         }, { capture: true, passive: true });
 
-        // Enter in het invoerveld verstuurt een bericht: lijsten die onderaan staan blijven daar.
+        // Enter in the composer sends a message: lists at the bottom stay there.
         addEventListener('keydown', (event) => {
             if (event.key !== 'Enter' || event.shiftKey || !isEditable(event.target)) return;
             sentUntil = now() + 2000;
@@ -58,7 +58,7 @@ enum ScrollShim {
             }
         }, { capture: true, passive: true });
 
-        // Scrollen door Chat zelf (bijvoorbeeld naar het eerste ongelezen bericht) telt ook als bedoeld.
+        // Scrolling by Chat itself (for example to the first unread message) also counts as intended.
         const wrap = (name) => {
             const original = Element.prototype[name];
             if (typeof original !== 'function') return;
@@ -105,7 +105,7 @@ enum ScrollShim {
             if (now() < intentUntil) {
                 if (distanceToBottom(element) <= threshold) pinned.add(element); else pinned.delete(element);
             } else if (pinned.has(element)) {
-                // Verschoven zonder dat iemand scrolde: terug naar beneden.
+                // Shifted without anyone scrolling: back to the bottom.
                 schedule();
             }
         }, { capture: true, passive: true });
