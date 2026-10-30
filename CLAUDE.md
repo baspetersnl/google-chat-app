@@ -70,7 +70,7 @@ stays in the app; `PopupCatcher` and `DownloadManager` handle `window.open` and 
 
 ## Gotchas
 
-- The bundle identifier is `nl.powerkraut.googlechat`. Changing it makes macOS treat the app as new:
+- The bundle identifier is `nl.baspeters.googlechat`. Changing it makes macOS treat the app as new:
   cookies (sign-in), notification permission and window state are lost.
 - `PlistBuddy` rewrites `Info.plist` with tab indentation; that is expected.
 - The app is ad-hoc signed and not notarized. Downloaded builds need "Open Anyway" or
