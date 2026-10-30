@@ -64,6 +64,12 @@ If nothing appears, check System Settings > Notifications > Google Chat, and in 
 The unread count is read from Chat's labels in English and Dutch. In other languages the badge falls
 back to a dot.
 
+## Documentation
+
+- [`docs/specs/`](docs/specs/): one spec per feature, including the observed Google Chat behaviour it relies on.
+- [`docs/adr/`](docs/adr/): architecture decision records.
+- [`CLAUDE.md`](CLAUDE.md): context and conventions for AI coding agents.
+
 ## Structure
 
 | File | Purpose |
