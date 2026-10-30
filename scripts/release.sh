@@ -44,18 +44,18 @@ ditto -c -k --keepParent "$ROOT/build/Google Chat.app" "$ZIP"
 echo "Ingepakt: $ZIP"
 
 cat > "$NOTES" <<EOF
-## Installeren
+## Installation
 
-1. Download \`Google-Chat-$VERSION.zip\` en pak hem uit.
-2. Sleep **Google Chat.app** naar de map Programma's.
-3. De app is niet genotariseerd door Apple. Zegt macOS dat de app niet geopend kan worden, ga dan naar
-   Systeeminstellingen > Privacy en beveiliging en klik op **Open toch**. Of voer dit uit in Terminal:
+1. Download \`Google-Chat-$VERSION.zip\` and unzip it.
+2. Drag **Google Chat.app** to your Applications folder.
+3. The app is not notarized by Apple. If macOS says the app cannot be opened, go to
+   System Settings > Privacy & Security and click **Open Anyway**. Or run this in Terminal:
 
    \`\`\`sh
    xattr -dr com.apple.quarantine "/Applications/Google Chat.app"
    \`\`\`
 
-Vereist macOS 14 of nieuwer.
+Requires macOS 14 or later.
 EOF
 
 git tag -a "$TAG" -m "Versie $VERSION"
