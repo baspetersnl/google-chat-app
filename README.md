@@ -11,6 +11,13 @@ Je hebt alleen de Command Line Tools nodig, geen Xcode.
 ./scripts/build.sh install   # bouwt en kopieert naar /Applications
 ```
 
+## Release maken
+
+1. Verhoog `CFBundleShortVersionString` (en `CFBundleVersion`) in `Support/Info.plist` en commit dat.
+2. Draai `./scripts/release.sh`. Het script bouwt de app, maakt `build/Google-Chat-<versie>.zip`,
+   zet de tag `v<versie>` en pusht die. Met de [GitHub CLI](https://cli.github.com) (`gh`) wordt de
+   release ook gepubliceerd; anders toont het script de link om dat zelf te doen.
+
 ## Wat de app doet
 
 - **Notificaties**: WKWebView kent de Web Notification API niet. `NotificationShim` vervangt
