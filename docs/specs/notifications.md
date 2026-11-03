@@ -30,11 +30,14 @@ Status: implemented in 1.0.0, verified working on 2026-10-30.
 
 Each notification is posted to the `gchatNotification` handler with `id`, `title`, `body`, `tag`,
 `icon` (absolute URL), `silent`, `source` (`page` or `serviceWorker`), `thread` (`<kind>/<id>` of the
-conversation, empty when not found) and `data` (JSON, max 2000 chars, for logging). `NotificationBridge` shows it with `UNUserNotificationCenter`:
+conversation, empty when not found), `kind`, `group` and `target` (the conversation URL) and `data`
+(JSON, max 2000 chars, for logging). `NotificationBridge` shows it with `UNUserNotificationCenter`:
 
 - request identifier `tag:<tag>` when a tag exists, otherwise the shim's id;
 - `threadIdentifier` is `thread`, falling back to the tag. The tag alone does not group anything, because
   Chat makes it unique per message (see below);
+- `kind`, `group` and `target` are stored in the notification's `userInfo`, so a click still knows which
+  conversation to open after the page was reloaded or the app was restarted;
 - the avatar is downloaded (3 s timeout) and converted to PNG, because Notification Center does not
   accept WebP;
 - the frame that created the notification is remembered (last 200) for the click.
@@ -48,6 +51,9 @@ conversation, empty when not found) and `data` (JSON, max 2000 chars, for loggin
    opens the conversation itself: first `window.__gchatOpenGroup(kind, id)`, which clicks the sidebar
    element `[data-group-id="<kind>/<id>"]`; if that element is not found, it loads `target`
    (`<origin><prefix>/app/chat/<id>`).
+3. When the shim no longer knows the notification (`found` is false after a reload, or evaluating the
+   script fails because the app was just launched), the values stored in `userInfo` replace the shim
+   result, so step 2 still opens the right conversation.
 
 ## Observed Chat behaviour (2026-10-30)
 

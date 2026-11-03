@@ -88,7 +88,15 @@ final class NotificationBridge: NSObject, WKScriptMessageHandler {
         let content = UNMutableNotificationContent()
         content.title = payload["title"] as? String ?? "Google Chat"
         content.body = payload["body"] as? String ?? ""
-        content.userInfo = ["jsId": id]
+
+        // Kept in userInfo so a click still knows which conversation to open after the page was
+        // reloaded or the app was restarted, when the shim no longer has the notification instance.
+        content.userInfo = [
+            "jsId": id,
+            "kind": payload["kind"] as? String ?? "",
+            "group": payload["group"] as? String ?? "",
+            "target": payload["target"] as? String ?? "",
+        ]
 
         if !thread.isEmpty {
             content.threadIdentifier = thread
@@ -148,10 +156,31 @@ final class NotificationBridge: NSObject, WKScriptMessageHandler {
         }
     }
 
-    private func handleClick(jsId: String?) {
+    private struct ClickTarget: Sendable {
+        var kind = ""
+        var group = ""
+        var target: URL?
+
+        init(userInfo: [AnyHashable: Any]) {
+            kind = userInfo["kind"] as? String ?? ""
+            group = userInfo["group"] as? String ?? ""
+            target = (userInfo["target"] as? String).flatMap(URL.init(string:))
+        }
+
+        init(kind: String, group: String, target: URL?) {
+            self.kind = kind
+            self.group = group
+            self.target = target
+        }
+
+        var isComplete: Bool { !kind.isEmpty && !group.isEmpty }
+    }
+
+    private func handleClick(jsId: String?, stored: ClickTarget) {
         onActivate?()
 
         guard let jsId, let webView else {
+            openConversation(stored)
             return
         }
 
@@ -168,49 +197,83 @@ final class NotificationBridge: NSObject, WKScriptMessageHandler {
         webView.evaluateJavaScript(script, in: frame, in: .page) { [weak self] result in
             switch result {
             case .success(let value):
-                self?.handleClickResult(value, jsId: jsId)
+                self?.handleClickResult(value, stored: stored)
             case .failure(let error):
                 NSLog("Notification click \(jsId) failed in frame: \(error.localizedDescription)")
-                if frame != nil {
-                    webView.evaluateJavaScript(script, in: nil, in: .page) { [weak self] result in
-                        if case .success(let value) = result {
-                            self?.handleClickResult(value, jsId: jsId)
-                        }
+                guard frame != nil else {
+                    self?.openConversation(stored)
+                    return
+                }
+
+                webView.evaluateJavaScript(script, in: nil, in: .page) { [weak self] result in
+                    switch result {
+                    case .success(let value):
+                        self?.handleClickResult(value, stored: stored)
+                    case .failure(let error):
+                        NSLog("Notification click \(jsId) failed in main frame: \(error.localizedDescription)")
+                        self?.openConversation(stored)
                     }
                 }
             }
         }
     }
 
-    /// When the page does nothing with the click (nobody listens to service worker notifications),
-    /// the app opens the conversation itself: through the sidebar first, otherwise by loading its URL.
-    private func handleClickResult(_ value: Any, jsId: String) {
+    /// When the page does nothing with the click (nobody listens to service worker notifications, or
+    /// the page no longer knows the notification), the app opens the conversation itself: through the
+    /// sidebar first, otherwise by loading its URL.
+    private func handleClickResult(_ value: Any, stored: ClickTarget) {
         let result = value as? [String: Any] ?? [:]
-        NSLog("Notification click \(jsId): \(result)")
+        NSLog("Notification click: \(result)")
 
         let hasHandler = result["hasHandler"] as? Bool ?? false
         let fromServiceWorker = result["source"] as? String == "serviceWorker"
 
-        guard
-            !hasHandler || fromServiceWorker,
-            let webView,
+        guard !hasHandler || fromServiceWorker else {
+            return
+        }
+
+        var target = stored
+        if
             let kind = result["kind"] as? String, !kind.isEmpty,
-            let group = result["group"] as? String, !group.isEmpty,
-            let arguments = try? JSONSerialization.data(withJSONObject: [kind, group]),
+            let group = result["group"] as? String, !group.isEmpty
+        {
+            target = ClickTarget(
+                kind: kind,
+                group: group,
+                target: (result["target"] as? String).flatMap(URL.init(string:)) ?? stored.target
+            )
+        }
+
+        openConversation(target)
+    }
+
+    private func openConversation(_ target: ClickTarget) {
+        guard let webView else {
+            return
+        }
+
+        guard target.isComplete else {
+            if let url = target.target, LinkPolicy.isInternal(url) {
+                webView.load(URLRequest(url: url))
+            }
+            return
+        }
+
+        guard
+            let arguments = try? JSONSerialization.data(withJSONObject: [target.kind, target.group]),
             let argumentList = String(data: arguments, encoding: .utf8)
         else {
             return
         }
 
-        let target = (result["target"] as? String).flatMap(URL.init(string:))
         let script = "window.__gchatOpenGroup ? window.__gchatOpenGroup(...\(argumentList)) : 'missing'"
 
         webView.evaluateJavaScript(script, in: nil, in: .page) { [weak webView] outcome in
             let opened = (try? outcome.get()) as? String == "clicked"
-            NSLog("Opening conversation \(kind)/\(group) through the sidebar: \(opened ? "succeeded" : "not found")")
+            NSLog("Opening conversation \(target.kind)/\(target.group) through the sidebar: \(opened ? "succeeded" : "not found")")
 
-            if !opened, let target, LinkPolicy.isInternal(target) {
-                webView?.load(URLRequest(url: target))
+            if !opened, let url = target.target, LinkPolicy.isInternal(url) {
+                webView?.load(URLRequest(url: url))
             }
         }
     }
@@ -228,10 +291,12 @@ extension NotificationBridge: UNUserNotificationCenterDelegate {
         _ center: UNUserNotificationCenter,
         didReceive response: UNNotificationResponse
     ) async {
-        let jsId = response.notification.request.content.userInfo["jsId"] as? String
+        let userInfo = response.notification.request.content.userInfo
+        let stored = ClickTarget(userInfo: userInfo)
+        let jsId = userInfo["jsId"] as? String
 
         await MainActor.run {
-            handleClick(jsId: jsId)
+            handleClick(jsId: jsId, stored: stored)
         }
     }
 }
