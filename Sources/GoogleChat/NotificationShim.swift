@@ -105,6 +105,9 @@ enum NotificationShim {
                     silent: this.silent,
                     source: this.source,
                     thread: this.group ? `${this.group.kind}/${this.group.id}` : '',
+                    kind: this.group ? this.group.kind : '',
+                    group: this.group ? this.group.id : '',
+                    target: this.group ? groupUrl(this.group) : '',
                     data: describe(this.data),
                 });
 
