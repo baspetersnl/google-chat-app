@@ -126,12 +126,76 @@ final class NotificationBridge: NSObject, WKScriptMessageHandler {
         }
     }
 
+    private static let iconCache: NSCache<NSString, NSData> = {
+        let cache = NSCache<NSString, NSData>()
+        cache.countLimit = 32
+        return cache
+    }()
+
+    /// Notification Center moves the attachment into its own store when the request is validated, so
+    /// the file has to stay in place until then. Anything left behind is removed after an hour.
+    private nonisolated static var iconFolder: URL {
+        let folder = FileManager.default.temporaryDirectory
+            .appendingPathComponent("GoogleChatNotificationIcons", isDirectory: true)
+        try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        return folder
+    }
+
+    private nonisolated static func removeOldIcons(in folder: URL) {
+        let cutoff = Date().addingTimeInterval(-3600)
+
+        guard let entries = try? FileManager.default.contentsOfDirectory(
+            at: folder,
+            includingPropertiesForKeys: [.contentModificationDateKey]
+        ) else {
+            return
+        }
+
+        for entry in entries {
+            let modified = (try? entry.resourceValues(forKeys: [.contentModificationDateKey]))?.contentModificationDate
+            if let modified, modified < cutoff {
+                try? FileManager.default.removeItem(at: entry)
+            }
+        }
+    }
+
     /// Downloads the avatar and converts it to PNG, because Notification Center does not accept WebP.
     private static func attachment(for url: URL) async -> UNNotificationAttachment? {
         guard LinkPolicy.isWeb(url) else {
             return nil
         }
 
+        let key = url.absoluteString as NSString
+        let png: Data
+
+        if let cached = iconCache.object(forKey: key) {
+            png = cached as Data
+        } else if let converted = await Self.pngData(for: url) {
+            iconCache.setObject(converted as NSData, forKey: key, cost: converted.count)
+            png = converted
+        } else {
+            return nil
+        }
+
+        let folder = Self.iconFolder
+        Self.removeOldIcons(in: folder)
+
+        let file = folder
+            .appendingPathComponent(UUID().uuidString)
+            .appendingPathExtension("png")
+
+        do {
+            try png.write(to: file)
+            return try UNNotificationAttachment(identifier: "icon", url: file)
+        } catch {
+            try? FileManager.default.removeItem(at: file)
+            return nil
+        }
+    }
+
+    /// Runs off the main actor: a nonisolated async function does not inherit the caller's actor.
+    /// Chat reuses the same avatar for many messages, so the result is cached by URL.
+    private nonisolated static func pngData(for url: URL) async -> Data? {
         var request = URLRequest(url: url, timeoutInterval: 3)
         request.setValue(LinkPolicy.userAgent, forHTTPHeaderField: "User-Agent")
 
@@ -144,16 +208,7 @@ final class NotificationBridge: NSObject, WKScriptMessageHandler {
             return nil
         }
 
-        let file = FileManager.default.temporaryDirectory
-            .appendingPathComponent(UUID().uuidString)
-            .appendingPathExtension("png")
-
-        do {
-            try png.write(to: file)
-            return try UNNotificationAttachment(identifier: "icon", url: file)
-        } catch {
-            return nil
-        }
+        return png
     }
 
     private struct ClickTarget: Sendable {
