@@ -51,6 +51,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func showMainWindow() {
+        if let window = windowController?.window, window.isMiniaturized {
+            window.deminiaturize(nil)
+        }
+
         windowController?.showWindow(nil)
         windowController?.window?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
