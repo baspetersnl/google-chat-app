@@ -6,7 +6,7 @@ Status: implemented in 1.0.0, verified working on 2026-10-30.
 
 - Closing the window (Cmd+W or the close button) only hides it. The app keeps running and keeps
   receiving messages and notifications. Cmd+Q quits.
-- Clicking the Dock icon, or a notification, shows the window again.
+- Clicking the Dock icon, or a notification, shows the window again, also when it was minimized.
 - Window size and position, and the zoom level (Cmd+= / Cmd+- / Cmd+0, 50% to 300%), are remembered.
 - If the web content process crashes, the page reloads.
 
@@ -14,7 +14,8 @@ Status: implemented in 1.0.0, verified working on 2026-10-30.
 
 - `ChatWindowController.windowShouldClose` calls `orderOut` and returns `false`.
 - `applicationShouldTerminateAfterLastWindowClosed` returns `false`;
-  `applicationShouldHandleReopen` shows the window.
+  `applicationShouldHandleReopen` shows the window. `AppDelegate.showMainWindow` deminiaturizes the
+  window first, because `makeKeyAndOrderFront` does not restore a minimized window.
 - `AppDelegate` starts a `ProcessInfo` activity (`.userInitiatedAllowingIdleSystemSleep`) for the app's
   lifetime, which disables App Nap but allows the Mac to sleep.
 - WebKit's page-visibility process suppression is disabled through a private preference
