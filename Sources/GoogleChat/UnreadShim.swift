@@ -66,6 +66,16 @@ enum UnreadShim {
             attributeFilter: ['aria-label', 'href'],
         });
 
+        // A frame that is removed from the page cannot report that it is gone, so the app needs a
+        // heartbeat to notice, and a last message when the document unloads.
+        window.addEventListener('pagehide', () => {
+            handler.postMessage({ frame: frameId, gone: true });
+        });
+
+        setInterval(() => {
+            handler.postMessage({ frame: frameId, alive: true });
+        }, 30000);
+
         schedule();
     })();
     """#
