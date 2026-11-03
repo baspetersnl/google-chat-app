@@ -38,8 +38,11 @@ conversation, empty when not found), `kind`, `group` and `target` (the conversat
   Chat makes it unique per message (see below);
 - `kind`, `group` and `target` are stored in the notification's `userInfo`, so a click still knows which
   conversation to open after the page was reloaded or the app was restarted;
-- the avatar is downloaded (3 s timeout) and converted to PNG, because Notification Center does not
-  accept WebP;
+- the avatar is downloaded (3 s timeout) and converted to PNG on a background executor, because
+  Notification Center does not accept WebP. The converted image is cached by URL (max 32). The PNG is
+  written to a private folder in the temp directory; files in that folder older than an hour are removed
+  when the next avatar is prepared. The file cannot be deleted right away: Notification Center moves it
+  into its own store when the request is validated, and only failed attempts stay behind;
 - the frame that created the notification is remembered (last 200) for the click.
 
 ### Click handling
