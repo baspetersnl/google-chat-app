@@ -27,7 +27,14 @@ final class UnreadTracker: NSObject, WKScriptMessageHandler {
         let title: String
         let icons: [String]
         let labels: [String]
+        let isMainFrame: Bool
+        var lastSeen: SuspendingClock.Instant
     }
+
+    /// Subframes can be removed without notice; the main frame keeps Chat's Home shortcut and is
+    /// only dropped by `reset()`.
+    private static let frameTimeout: Duration = .seconds(120)
+    private static let maximumFrames = 50
 
     private var frames: [String: FrameState] = [:]
 
@@ -36,17 +43,33 @@ final class UnreadTracker: NSObject, WKScriptMessageHandler {
             return
         }
 
+        if (payload["gone"] as? Bool) == true {
+            removeFrame(frame)
+            updateBadge()
+            return
+        }
+
+        if (payload["alive"] as? Bool) == true {
+            frames[frame]?.lastSeen = .now
+            pruneFrames()
+            return
+        }
+
         let url = payload["url"] as? String ?? ""
         let state = FrameState(
             title: payload["title"] as? String ?? "",
             icons: payload["icons"] as? [String] ?? [],
-            labels: payload["labels"] as? [String] ?? []
+            labels: payload["labels"] as? [String] ?? [],
+            isMainFrame: message.frameInfo.isMainFrame,
+            lastSeen: .now
         )
         frames[frame] = state
 
         if !state.icons.isEmpty || !state.labels.isEmpty {
             NSLog("Unread state \(url): title=\(state.title) icons=\(state.icons) labels=\(state.labels)")
         }
+
+        pruneFrames()
         updateBadge()
     }
 
@@ -54,6 +77,25 @@ final class UnreadTracker: NSObject, WKScriptMessageHandler {
     func reset() {
         frames.removeAll()
         updateBadge()
+    }
+
+    private func removeFrame(_ frame: String) {
+        if frames.removeValue(forKey: frame) != nil {
+            NSLog("Unread frame removed: \(frame)")
+        }
+    }
+
+    private func pruneFrames() {
+        let deadline = SuspendingClock.now - Self.frameTimeout
+
+        for frame in frames.filter({ !$0.value.isMainFrame && $0.value.lastSeen < deadline }).keys {
+            removeFrame(frame)
+        }
+
+        while frames.count > Self.maximumFrames,
+              let oldest = frames.filter({ !$0.value.isMainFrame }).min(by: { $0.value.lastSeen < $1.value.lastSeen })?.key {
+            removeFrame(oldest)
+        }
     }
 
     private func updateBadge() {
