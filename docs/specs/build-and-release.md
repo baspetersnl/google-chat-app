@@ -20,7 +20,7 @@ Status: in use since 1.0.0.
    `build/release-notes-<version>.md`, creates and pushes the annotated tag `v<version>`, and publishes
    the GitHub release with `gh` when it is installed and authenticated.
 
-Release history: `v1.0.0` (first release), `v1.1.0` (English project, localized app), `v1.1.1` (bundle identifier `nl.baspeters.googlechat`), `v1.2.0` (notifications grouped per conversation).
+Release history: `v1.0.0` (first release), `v1.1.0` (English project, localized app), `v1.1.1` (bundle identifier `nl.baspeters.googlechat`), `v1.2.0` (notifications grouped per conversation), `v1.3.0` (read notifications removed, notification clicks after a reload, reliable unread badge, minimized window restored).
 
 ## Distribution limits
 
