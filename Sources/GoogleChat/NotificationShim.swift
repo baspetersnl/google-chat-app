@@ -120,6 +120,7 @@ enum NotificationShim {
             }
 
             close() {
+                if (!instances.has(this.id)) return;
                 handler.postMessage({ type: 'close', id: this.id, tag: this.tag });
                 instances.delete(this.id);
                 this._emit('close');
@@ -185,8 +186,12 @@ enum NotificationShim {
                 new NativeNotification(title, options || {}, 'serviceWorker');
                 return Promise.resolve();
             };
-            ServiceWorkerRegistration.prototype.getNotifications = function () {
-                return Promise.resolve([]);
+            // Returns the open notifications, so Chat can close them itself (for example once read).
+            ServiceWorkerRegistration.prototype.getNotifications = function (filter) {
+                const tag = filter && filter.tag != null ? String(filter.tag) : null;
+                const open = [...instances.values()].filter((notification) =>
+                    notification.source === 'serviceWorker' && (tag === null || notification.tag === tag));
+                return Promise.resolve(open);
             };
         }
     })();

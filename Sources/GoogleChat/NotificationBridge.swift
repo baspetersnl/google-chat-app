@@ -62,9 +62,31 @@ final class NotificationBridge: NSObject, WKScriptMessageHandler {
             remember(frame: message.frameInfo, for: id)
             show(id: id, tag: tag, thread: thread, payload: payload)
         case "close":
+            NSLog("Notification \(id) closed by the page: tag=\(tag)")
             center.removeDeliveredNotifications(withIdentifiers: [identifier(id: id, tag: tag)])
         default:
             break
+        }
+    }
+
+    /// Removes the notifications of a conversation, whose thread is `dm/<id>` or `space/<id>`.
+    func removeDelivered(conversation id: String, reason: String) {
+        removeDelivered(reason: reason) { $0.request.content.threadIdentifier.hasSuffix("/\(id)") }
+    }
+
+    func removeAllDelivered(reason: String) {
+        removeDelivered(reason: reason) { _ in true }
+    }
+
+    private func removeDelivered(reason: String, where matches: @escaping (UNNotification) -> Bool) {
+        Task {
+            let identifiers = await center.deliveredNotifications().filter(matches).map(\.request.identifier)
+            guard !identifiers.isEmpty else {
+                return
+            }
+
+            NSLog("Removing \(identifiers.count) notification(s): \(reason)")
+            center.removeDeliveredNotifications(withIdentifiers: identifiers)
         }
     }
 

@@ -26,9 +26,12 @@ final class ChatWindowController: NSWindowController, NSWindowDelegate {
     private let downloads = DownloadManager()
     private let unread = UnreadTracker()
     private var popups: [PopupCatcher] = []
+    private let notifications: NotificationBridge
     private var titleObservation: NSKeyValueObservation?
+    private var urlObservation: NSKeyValueObservation?
 
     init(notifications: NotificationBridge) {
+        self.notifications = notifications
         let configuration = WKWebViewConfiguration()
         configuration.websiteDataStore = .default()
         configuration.mediaTypesRequiringUserActionForPlayback = []
@@ -85,10 +88,18 @@ final class ChatWindowController: NSWindowController, NSWindowDelegate {
         webView.uiDelegate = self
         notifications.webView = webView
         configuration.userContentController.add(WeakMessageHandler(unread), name: UnreadTracker.messageName)
+        unread.onAllRead = { [weak notifications] in
+            notifications?.removeAllDelivered(reason: "no unread messages left")
+        }
 
         titleObservation = webView.observe(\.title, options: [.new]) { [weak self] webView, _ in
             MainActor.assumeIsolated {
                 self?.titleDidChange(webView.title)
+            }
+        }
+        urlObservation = webView.observe(\.url, options: [.new]) { [weak self] _, _ in
+            MainActor.assumeIsolated {
+                self?.removeNotificationsOfVisibleConversation()
             }
         }
 
@@ -115,7 +126,36 @@ final class ChatWindowController: NSWindowController, NSWindowDelegate {
         window?.title = title.isEmpty ? "Google Chat" : title
     }
 
+    /// Chat marks a conversation as read once it is open, so its notifications are no longer needed.
+    /// Only when the user can see it: the URL also changes while the window is hidden.
+    private func removeNotificationsOfVisibleConversation() {
+        guard
+            let window, window.isVisible, window.isKeyWindow,
+            let url = webView.url,
+            let id = Self.conversationId(in: url)
+        else {
+            return
+        }
+
+        notifications.removeDelivered(conversation: id, reason: "conversation \(id) is open")
+    }
+
+    /// The conversation in a URL such as `https://chat.google.com/u/0/app/chat/<id>`.
+    private static func conversationId(in url: URL) -> String? {
+        let components = url.pathComponents
+        guard let index = components.firstIndex(of: "app"), components.count > index + 2, components[index + 1] == "chat" else {
+            return nil
+        }
+
+        let id = components[index + 2]
+        return id.isEmpty ? nil : id
+    }
+
     // MARK: Window
+
+    func windowDidBecomeKey(_ notification: Notification) {
+        removeNotificationsOfVisibleConversation()
+    }
 
     /// Closing only hides the window, so messages and notifications keep coming in.
     func windowShouldClose(_ sender: NSWindow) -> Bool {

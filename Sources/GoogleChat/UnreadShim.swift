@@ -30,22 +30,25 @@ enum UnreadShim {
         let last = '';
         let pending = false;
 
-        const report = () => {
-            pending = false;
-
+        const collect = () => {
             const icons = [...document.querySelectorAll('link[rel~="icon"]')].map((link) => link.href);
             const labels = [...document.querySelectorAll('[aria-label]')]
                 .map((element) => element.getAttribute('aria-label') || '')
                 .filter((label) => unreadLabel.test(label));
 
-            const state = {
+            return {
                 frame: frameId,
                 url: location.href,
                 title: document.title,
                 icons,
                 labels: [...new Set(labels)].slice(0, 50),
             };
+        };
 
+        const report = () => {
+            pending = false;
+
+            const state = collect();
             const key = JSON.stringify(state);
             if (key === last) return;
             last = key;
@@ -67,13 +70,15 @@ enum UnreadShim {
         });
 
         // A frame that is removed from the page cannot report that it is gone, so the app needs a
-        // heartbeat to notice, and a last message when the document unloads.
+        // heartbeat to notice, and a last message when the document unloads. The heartbeat carries the
+        // full state, so a frame the app dropped while its timers were throttled is added back.
         window.addEventListener('pagehide', () => {
+            last = '';
             handler.postMessage({ frame: frameId, gone: true });
         });
 
         setInterval(() => {
-            handler.postMessage({ frame: frameId, alive: true });
+            handler.postMessage({ ...collect(), alive: true });
         }, 30000);
 
         schedule();

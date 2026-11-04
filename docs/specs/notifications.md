@@ -12,12 +12,18 @@ Status: implemented in 1.0.0, verified working on 2026-10-30.
 - Notifications are also shown while the app is in the foreground (Chat itself decides whether to notify).
 - Clicking a notification brings the app to the front, shows the window if it was hidden, and opens the
   conversation the notification belongs to.
+- Notifications are removed from the Notification Center once they are read:
+  - when Chat closes them itself;
+  - when their conversation is open while the window is in front;
+  - when nothing is unread anymore (for example after reading on another device).
 
 ## Acceptance criteria
 
 - With the window hidden (Cmd+W), an incoming message produces a macOS notification.
 - Clicking it shows the window with that conversation open, both for direct messages and for spaces.
 - Chat's own "enable notifications" prompt does not appear: the page sees permission `granted`.
+- Opening a conversation in the app removes its notifications; reading everything elsewhere removes
+  all notifications once the Dock badge is empty.
 
 ## Implementation
 
@@ -44,6 +50,18 @@ conversation, empty when not found), `kind`, `group` and `target` (the conversat
   when the next avatar is prepared. The file cannot be deleted right away: Notification Center moves it
   into its own store when the request is validated, and only failed attempts stay behind;
 - the frame that created the notification is remembered (last 200) for the click.
+
+### Removing read notifications
+
+- `getNotifications({ tag })` returns the open service worker notifications (optionally filtered by
+  tag), so Chat can call `close()` on them. `close()` posts `close`, which removes the notification
+  with the same request identifier (log line `Notification <id> closed by the page`).
+- `ChatWindowController` watches `webView.url` and `windowDidBecomeKey`. When the window is visible and
+  key and the URL is `.../app/chat/<id>`, every delivered notification whose `threadIdentifier` ends in
+  `/<id>` is removed.
+- `UnreadTracker.onAllRead` fires when the badge changes from set to empty (not on the empty state right
+  after a page load); then all delivered notifications are removed.
+- Each removal logs `Removing <n> notification(s): <reason>`.
 
 ### Click handling
 
@@ -73,7 +91,13 @@ conversation, empty when not found), `kind`, `group` and `target` (the conversat
 - Which of the two click paths (sidebar or URL) actually opened the conversation was not logged. If
   clicks stop working, check the `Opening conversation ... through the sidebar` log line first.
 
+- Not yet verified: whether Chat calls `getNotifications()`/`close()` when a message is read, and whether
+  the URL of an open direct message also has the form `/app/chat/<id>`. Check the log lines above.
+
 ## Known limitations
+
+- Reading one conversation on another device does not remove its notifications while other
+  conversations are still unread, unless Chat closes them itself.
 
 - Notification actions (reply from the notification) are not supported (`maxActions` is 0).
 - If Chat changes the data format, clicks only bring the app to the front. The `Notification` log line

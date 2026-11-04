@@ -37,6 +37,10 @@ final class UnreadTracker: NSObject, WKScriptMessageHandler {
     private static let maximumFrames = 50
 
     private var frames: [String: FrameState] = [:]
+    private var hadUnread = false
+
+    /// Called when the unread state changes from unread to nothing unread.
+    var onAllRead: (() -> Void)?
 
     func userContentController(_ controller: WKUserContentController, didReceive message: WKScriptMessage) {
         guard let payload = message.body as? [String: Any], let frame = payload["frame"] as? String else {
@@ -49,12 +53,6 @@ final class UnreadTracker: NSObject, WKScriptMessageHandler {
             return
         }
 
-        if (payload["alive"] as? Bool) == true {
-            frames[frame]?.lastSeen = .now
-            pruneFrames()
-            return
-        }
-
         let url = payload["url"] as? String ?? ""
         let state = FrameState(
             title: payload["title"] as? String ?? "",
@@ -63,6 +61,19 @@ final class UnreadTracker: NSObject, WKScriptMessageHandler {
             isMainFrame: message.frameInfo.isMainFrame,
             lastSeen: .now
         )
+
+        if (payload["alive"] as? Bool) == true {
+            // A heartbeat only refreshes a known frame. A frame that was pruned while its timers were
+            // throttled is added back, because the shim only reports changes and would stay missing.
+            if frames[frame] != nil {
+                frames[frame]?.lastSeen = .now
+                pruneFrames()
+                updateBadge()
+                return
+            }
+            NSLog("Unread frame restored: \(frame)")
+        }
+
         frames[frame] = state
 
         if !state.icons.isEmpty || !state.labels.isEmpty {
@@ -104,12 +115,29 @@ final class UnreadTracker: NSObject, WKScriptMessageHandler {
         let labelCount = states.map { UnreadCount.count(labels: $0.labels) }.max() ?? 0
         let count = max(titleCount, labelCount)
 
+        let badge: String?
         if count > 0 {
-            NSApp.dockTile.badgeLabel = String(count)
+            badge = String(count)
         } else if states.contains(where: { UnreadCount.hasUnreadIcon($0.icons) }) {
-            NSApp.dockTile.badgeLabel = "•"
+            badge = "•"
         } else {
-            NSApp.dockTile.badgeLabel = nil
+            badge = nil
         }
+
+        if badge != NSApp.dockTile.badgeLabel {
+            NSLog("Unread badge: \(NSApp.dockTile.badgeLabel ?? "none") -> \(badge ?? "none") (frames=\(states.count))")
+            NSApp.dockTile.badgeLabel = badge
+        }
+
+        // An empty state right after a page load (no frames yet) does not count as read.
+        guard !states.isEmpty else {
+            return
+        }
+
+        let hasUnread = NSApp.dockTile.badgeLabel != nil
+        if hadUnread, !hasUnread {
+            onAllRead?()
+        }
+        hadUnread = hasUnread
     }
 }
